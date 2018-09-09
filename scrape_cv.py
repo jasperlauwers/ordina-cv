@@ -57,7 +57,7 @@ def get_arguments() -> dict:
         list_images.append(
             os.path.join(dir, 
                             'img_'+base.rstrip('.docx')))
-        Popen("mkdir " + list_images[-1], shell=True) 
+        Popen('mkdir "' + list_images[-1] + '"', shell=True) 
     else:
         for f in os.listdir(args.input):
             if os.path.isfile(os.path.join(args.input, f)) and f.lower().endswith('.docx') \
@@ -102,7 +102,8 @@ def docx_to_dict(input_file: str, images_dir: str) -> dict:
     # Split, cleanup and match subsections
     cv_dict['Role'] = cv_dict['Role'].split('\n\n')
     cv_dict['Profile'] = cv_dict['Profile'].replace('\n\n','\n').strip('\n')
-    cv_dict['Motivation'] = cv_dict['Motivation'].replace('\n\n','\n').strip('\n')
+    if cv_dict['Motivation']:
+        cv_dict['Motivation'] = cv_dict['Motivation'].replace('\n\n','\n').strip('\n')
     if cv_dict['Recommendation']:
         cv_dict['Recommendation'] = cv_dict['Recommendation'].replace('\n\n','\n').strip('\n')
 
@@ -156,7 +157,7 @@ def docx_to_dict(input_file: str, images_dir: str) -> dict:
     for ind, exp in enumerate(cv_dict['Experience']):
         cv_dict['Experience'][ind] = dict(zip(experience_fields, regexp_dict['experience'].match(exp).groups()))
         cv_dict['Experience'][ind]['Situation'] = cv_dict['Experience'][ind]['Situation'].replace('\n\n', '\n')
-        cv_dict['Experience'][ind]['Tasks'] = cv_dict['Experience'][ind]['Tasks'].replace('\n\n', '\n')
+        cv_dict['Experience'][ind]['Tasks'] = cv_dict['Experience'][ind]['Tasks'].replace('\n\n', '\n').strip()
         if cv_dict['Experience'][ind]['Result']:
             cv_dict['Experience'][ind]['Result'] = cv_dict['Experience'][ind]['Result'].replace('\n\n', '\n').strip('\n')
         if cv_dict['Experience'][ind]['Functional skills']:
@@ -187,12 +188,14 @@ def compile_regexp() -> dict:
     \n{4}
     Profile
     \s*
-    ([\s\S]+)                           # Profile
-    \n{4}
+    ([\s\S]+?)                          # Profile
+                                        # +? : not include next optional fields (non-greedy match)
+    (?:\n{4}                            # "(?: ... )?" optional non-capturing group
     Motivation
     \s*
     ([\s\S]+?)                          # Motivation, 
-                                        # +? to not include Recommendation
+    )?
+                                        
     (?:\n{4}                            # Optional field (?: non-capturing group)
     Recommendation                      
     \s*
